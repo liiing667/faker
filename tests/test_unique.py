@@ -27,6 +27,21 @@ class TestUniquenessClass:
             for i in range(3):
                 _ = fake.unique.boolean()
 
+    def test_exception_message_includes_context(self):
+        """The exhaustion error should identify the formatter, its
+        arguments, and the size of the already-generated pool."""
+        fake = Faker()
+
+        with pytest.raises(UniquenessException) as exc_info:
+            for i in range(11):
+                fake.unique.random_int(min=1, max=10)
+
+        message = str(exc_info.value)
+        assert "Got duplicated values after 1,000 iterations." in message
+        assert "'random_int'" in message
+        assert "'min': 1" in message and "'max': 10" in message
+        assert "10 unique values" in message
+
     def test_uniqueness_clear(self):
         fake = Faker()
 

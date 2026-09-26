@@ -74,10 +74,12 @@ class Provider(PassportProvider):
         - https://williamsinstitute.law.ucla.edu/publications/x-gender-markers-passports/
         """
         if seed != 0:
-            random.seed(seed)
+            rng = random.Random(seed)
+        else:
+            rng = self.generator.random
 
         genders = ["M", "F", "X"]
-        gender: SexLiteral = random.choices(genders, weights=[0.493, 0.493, 0.014], k=1)[0]  # type: ignore
+        gender: SexLiteral = rng.choices(genders, weights=[0.493, 0.493, 0.014], k=1)[0]  # type: ignore
         return gender
 
     def passport_full(self) -> str:

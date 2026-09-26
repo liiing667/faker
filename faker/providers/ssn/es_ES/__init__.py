@@ -1,5 +1,3 @@
-import random
-
 from .. import Provider as BaseProvider
 
 
@@ -32,8 +30,8 @@ class Provider(BaseProvider):
         :sample:
         """
 
-        first_chr = random.randrange(0, 3)
-        doi_body = str(random.randrange(0, 10000000)).zfill(7)
+        first_chr = self.generator.random.randrange(0, 3)
+        doi_body = str(self.generator.random.randrange(0, 10000000)).zfill(7)
         control = self._calculate_control_doi(str(first_chr) + doi_body)
         return "XYZ"[first_chr] + doi_body + control
 
@@ -45,7 +43,8 @@ class Provider(BaseProvider):
         :sample:
         """
 
-        nie_body = str(random.randrange(0, 100000000))  # generate a number of a maximum of 8 characters long
+        # generate a number of a maximum of 8 characters long
+        nie_body = str(self.generator.random.randrange(0, 100000000))
         return nie_body.zfill(8) + self._calculate_control_doi(nie_body)
 
     def cif(self) -> str:
@@ -56,8 +55,8 @@ class Provider(BaseProvider):
         :sample:
         """
 
-        first_chr = random.choice("ABCDEFGHJNPQRSUVW")
-        doi_body = str(random.randrange(0, 10000000)).zfill(7)
+        first_chr = self.generator.random.choice("ABCDEFGHJNPQRSUVW")
+        doi_body = str(self.generator.random.randrange(0, 10000000)).zfill(7)
         cif = first_chr + doi_body
         return cif + self._calculate_control_cif(cif)
 
@@ -72,8 +71,8 @@ class Provider(BaseProvider):
         nuss_body_length = 8
         if company:
             nuss_body_length = 7
-        province_digits = f"{random.choice(list(range(1, 54)) + [66]):02d}"
-        nuss_body = "".join(str(random.randint(0, 9)) for _ in range(nuss_body_length))
+        province_digits = f"{self.generator.random.choice(list(range(1, 54)) + [66]):02d}"
+        nuss_body = "".join(str(self.generator.random.randint(0, 9)) for _ in range(nuss_body_length))
         control_digits = f"{int(province_digits+nuss_body) % 97:02d}"
         nuss = f"{province_digits}{nuss_body}{control_digits}"
         return nuss
