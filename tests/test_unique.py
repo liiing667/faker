@@ -27,6 +27,30 @@ class TestUniquenessClass:
             for i in range(3):
                 _ = fake.unique.boolean()
 
+    def test_exception_message_pinpoints_context(self):
+        """The exhaustion error should identify the provider method, the
+        arguments used, the retry budget, and the size of the seen pool."""
+        fake = Faker()
+
+        with pytest.raises(UniquenessException) as exc_info:
+            for i in range(3):
+                _ = fake.unique.boolean(chance_of_getting_true=50)
+
+        message = str(exc_info.value)
+        assert "Got duplicated values after 1,000 iterations." in message
+        assert "'boolean'" in message
+        assert "chance_of_getting_true" in message
+        assert "unique values generated so far: 2" in message
+
+    def test_exception_message_reports_seen_pool_size(self):
+        fake = Faker()
+
+        with pytest.raises(UniquenessException) as exc_info:
+            for i in range(11):
+                _ = fake.unique.random_int(min=1, max=10)
+
+        assert "unique values generated so far: 10" in str(exc_info.value)
+
     def test_uniqueness_clear(self):
         fake = Faker()
 

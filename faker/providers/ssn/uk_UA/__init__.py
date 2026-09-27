@@ -1,14 +1,15 @@
-import random
-
 from datetime import date, datetime
+from random import Random
 from typing import Optional
 
 from ....typing import SexLiteral
 from .. import Provider as SsnProvider
 
 
-def select_gender(gender: SexLiteral) -> int:
+def select_gender(gender: SexLiteral, random: Optional[Random] = None) -> int:
     """Choose an even number for Female and odd number for Male."""
+    if random is None:
+        random = Random()
     gender = 0 if gender.lower() == "f" else 1
     return random.choice(range(gender, 10, 2))
 
@@ -53,7 +54,7 @@ class Provider(SsnProvider):
 
         day_count = calculate_day_count(dob)
         people_num = self.random_number(3, fix_len=True)
-        gender_ = select_gender(gender) if gender else random.randint(0, 1)
+        gender_ = select_gender(gender, self.generator.random) if gender else self.generator.random.randint(0, 1)
         ssn_without_checksum = f"{day_count}{people_num}{gender_}"
         checksum = calculate_check_sum(ssn_without_checksum)
         return f"{ssn_without_checksum}{checksum}"

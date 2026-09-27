@@ -2,6 +2,17 @@ import pytest
 
 from faker import Faker
 from faker.exceptions import UniquenessException
+from faker.providers import BaseProvider
+
+
+class MixedTypeProvider(BaseProvider):
+    """Provider returning an excluded type most of the time and a
+    non-excluded value from a tiny pool the rest of the time."""
+
+    def mostly_bool(self):
+        if self.generator.random.random() < 0.95:
+            return True
+        return "rare"
 
 
 class TestSelectiveUniqueness:
@@ -94,3 +105,14 @@ class TestSelectiveUniqueness:
         # Should work with locale selection
         for _ in range(10):
             proxy["en_US"].pybool()
+
+    def test_excluded_types_are_exempt_during_retries(self):
+        """Excluded types generated while retrying must be returned as-is
+        instead of being uniqueness-checked or recorded as seen."""
+        self.fake.add_provider(MixedTypeProvider)
+        proxy = self.fake.unique.exclude_types([bool])
+
+        # The string pool holds a single value, so any uniqueness check
+        # applied to the bools would exhaust the retry budget quickly
+        results = [proxy.mostly_bool() for _ in range(100)]
+        assert all(result is True or result == "rare" for result in results)

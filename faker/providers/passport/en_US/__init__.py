@@ -1,6 +1,5 @@
-import random
-
 from datetime import date, timedelta
+from random import Random
 from typing import Tuple
 
 from faker.typing import SexLiteral
@@ -74,10 +73,13 @@ class Provider(PassportProvider):
         - https://williamsinstitute.law.ucla.edu/publications/x-gender-markers-passports/
         """
         if seed != 0:
-            random.seed(seed)
+            # Use a dedicated Random instance so global random state is left untouched
+            generator_random = Random(seed)
+        else:
+            generator_random = self.generator.random
 
         genders = ["M", "F", "X"]
-        gender: SexLiteral = random.choices(genders, weights=[0.493, 0.493, 0.014], k=1)[0]  # type: ignore
+        gender: SexLiteral = generator_random.choices(genders, weights=[0.493, 0.493, 0.014], k=1)[0]  # type: ignore
         return gender
 
     def passport_full(self) -> str:

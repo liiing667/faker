@@ -366,38 +366,31 @@ class UniqueProxy:
     def _wrap(self, name: str, function: Callable) -> Callable:
         @functools.wraps(function)
         def wrapper(*args, **kwargs):
-            # If types are excluded, call function once to check return type
-            if self._excluded_types:
-                retval = function(*args, **kwargs)
-                # Skip uniqueness check if type is excluded
-                if isinstance(retval, self._excluded_types):
-                    return retval
-                # If not excluded, continue with normal uniqueness logic
-                # but we already have a value, so we'll use it if unique
-                hashable_retval = self._make_hashable(retval)
-                key = (name, args, tuple(sorted(kwargs.items())))
-                generated = self._seen.setdefault(key, {self._sentinel})
+            key = (name, args, tuple(sorted(kwargs.items())))
+            generated = self._seen.setdefault(key, {self._sentinel})
+            retval = self._sentinel
+            hashable_retval = self._make_hashable(retval)
 
-                # Check if this first value is unique
-                if hashable_retval not in generated:
-                    generated.add(hashable_retval)
-                    return retval
-                # Not unique, continue with normal loop below
-            else:
-                # No exclusions, use original logic
-                key = (name, args, tuple(sorted(kwargs.items())))
-                generated = self._seen.setdefault(key, {self._sentinel})
-                retval = self._sentinel
-                hashable_retval = self._make_hashable(retval)
-
-            # Original uniqueness logic (with potential first attempt already done)
-            for i in range(_UNIQUE_ATTEMPTS):
+            for _ in range(_UNIQUE_ATTEMPTS):
                 if hashable_retval not in generated:
                     break
                 retval = function(*args, **kwargs)
+                # Values of excluded types are exempt from uniqueness checks,
+                # so they are returned as-is and never recorded as seen
+                if self._excluded_types and isinstance(retval, self._excluded_types):
+                    return retval
                 hashable_retval = self._make_hashable(retval)
             else:
-                raise UniquenessException(f"Got duplicated values after {_UNIQUE_ATTEMPTS:,} iterations.")
+                unique_count = len(generated) - 1  # discard the internal sentinel
+                raise UniquenessException(
+                    f"Got duplicated values after {_UNIQUE_ATTEMPTS:,} iterations. "
+                    f"Provider method: {name!r}, args: {args!r}, kwargs: {kwargs!r}, "
+                    f"unique values generated so far: {unique_count:,}. "
+                    "The pool of available unique values for this method and argument "
+                    "combination may be too small; consider calling `.unique.clear()`, "
+                    "excluding types via `.unique.exclude_types()`, or widening the "
+                    "pool of possible values."
+                )
 
             generated.add(hashable_retval)
 
